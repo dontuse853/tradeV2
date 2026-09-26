@@ -1488,7 +1488,10 @@ function buildShapeBank(sym){
     for (let k = 0; k < s.n; k++){
       const o = s.o[k], h = s.h[k], l = s.l[k], c = s.c[k], v = s.v[k];
       const hiBase = Math.max(o, c), loBase = Math.min(o, c);
-      bars.push({rOpen: (o - prevClose) / prevClose, rClose: (c - o) / o, rHigh: (h - hiBase) / hiBase, rLow: (loBase - l) / loBase, v});
+      // bar 0 of every real day is the overnight gap (today's open vs yesterday's close), not an
+      // intraday move — it's orders of magnitude larger than a normal minute-to-minute change, so it's
+      // excluded from the reusable pool entirely to avoid injecting a fake mid-day "gap" into a synthetic day.
+      if (k > 0) bars.push({rOpen: (o - prevClose) / prevClose, rClose: (c - o) / o, rHigh: (h - hiBase) / hiBase, rLow: (loBase - l) / loBase, v});
       prevClose = c;
     }
     bank.push({date: s.date, n: s.n, pc: s.pc != null ? s.pc : s.o[0], bars});
