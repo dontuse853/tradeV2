@@ -179,6 +179,7 @@ kbd{font:inherit;font-size:12px;border:1px solid var(--line);border-bottom-width
 .pages{flex:1;min-height:0;display:flex;flex-direction:column}
 .stack{flex:1;min-height:0;overflow:auto;padding:12px 16px;display:flex;flex-direction:column;gap:12px}
 #labChart{position:absolute;inset:0;width:100%;height:100%;display:block}
+#simChart{position:absolute;inset:0;width:100%;height:100%;display:block}
 
 .slrow{display:grid;grid-template-columns:64px 1fr 30px;gap:8px;align-items:center;font-size:12px;color:var(--muted);margin:5px 0}
 .slrow input[type=range]{width:100%;accent-color:var(--accent)}
@@ -231,6 +232,7 @@ input[type=color]{width:36px;height:30px;border:1px solid var(--line);border-rad
       <button type="button" data-page="replay" aria-pressed="true">Replay</button>
       <button type="button" data-page="log" aria-pressed="false">Trade log</button>
       <button type="button" data-page="lab" aria-pressed="false">Candle lab</button>
+      <button type="button" data-page="sim" aria-pressed="false">Simulator</button>
     </div>
     <div class="pick" id="pickBar">
       <div class="seg" role="group" aria-label="Symbol" id="symSeg">
@@ -446,6 +448,85 @@ input[type=color]{width:36px;height:30px;border:1px solid var(--line);border-rad
         </section>
       </aside>
    </section>
+
+   <section class="app" id="page-sim" hidden>
+    <section class="chartcol" aria-label="Simulated day">
+      <div class="ticker">
+        <div class="tname"><b>Simulator</b><span id="simDateLbl">No day yet</span></div>
+        <div class="tprice"><span id="simPx">–</span><span id="simChg" class="pct"></span><span class="sub" id="simSub">Synthetic day, resampled from real NVDA/SPY minute bars</span></div>
+        <div class="tclock"><b id="simClock">–</b> ET</div>
+      </div>
+
+      <div class="chartbar">
+        <div class="group"><span class="glabel">Source</span><div class="seg" id="simSrcSeg" role="group" aria-label="Data source"></div></div>
+        <div class="group"><span class="glabel">Speed</span><div class="seg" id="simSpdSeg" role="group" aria-label="Playback speed"></div></div>
+      </div>
+
+      <div class="chartwrap" style="min-height:320px">
+        <canvas id="simChart" aria-label="Simulated candlestick chart"></canvas>
+        <div class="overlay" id="simEmpty">Generate a simulated day to begin.</div>
+        <div class="summary" id="simSummary" role="dialog" aria-label="Simulated day review">
+          <h3>Simulated day complete</h3>
+          <div class="sdate" id="simRevDate"></div>
+          <div class="sumgrid">
+            <div class="big2"><span>Day result (after fees)</span><b id="simRevPnl">–</b></div>
+            <div class="fine"><span>Closed trades</span><b id="simRevTrades">–</b></div>
+            <div class="fine"><span>Fees today</span><b id="simRevFees">–</b></div>
+            <div class="fine"><span>Account equity</span><b id="simRevEq">–</b></div>
+          </div>
+          <div id="simEngulfSummary" style="margin:2px 0 12px;font-size:12.5px;color:var(--muted)"></div>
+          <div style="max-height:240px;overflow:auto;text-align:left"><table class="patstats" id="simTradeReview"></table></div>
+          <div class="actions" style="margin-top:12px">
+            <button type="button" class="btn primary" id="simRevNewDay">New simulated day</button>
+            <button type="button" class="btn ghost" id="simRevClose">Dismiss</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="transport">
+        <button type="button" class="btn primary" id="simPlayBtn" style="min-width:84px">Play</button>
+        <button type="button" class="btn primary" id="simNewDayBtn">New simulated day</button>
+        <div class="steps">
+          <button type="button" class="btn" id="simStepMin" title="Reveal one more minute">+1 min</button>
+          <button type="button" class="btn" id="simStepCandle" title="Reveal until the next candle closes">+1 candle</button>
+        </div>
+        <div class="progress"><div class="pbar"><i id="simProgFill"></i></div><span class="eta" id="simEta"></span></div>
+      </div>
+    </section>
+
+    <aside class="side" aria-label="Simulator account and orders">
+      <section class="card">
+        <div class="eqrow"><span class="big" id="simEqBig">$100,000.00</span></div>
+        <dl class="kv">
+          <dt>Today</dt><dd id="simKvDay">–</dd>
+          <dt>Cash</dt><dd id="simKvCash">–</dd>
+          <dt>Fees paid</dt><dd id="simKvFees">–</dd>
+        </dl>
+        <div class="rowline"><button type="button" class="btn" id="simResetAcct">Reset simulator account</button></div>
+      </section>
+
+      <section class="card">
+        <h2>Order ticket</h2>
+        <div class="rowline" style="color:var(--muted);font-size:12px">Uses the size, leverage, fee, slippage and stop/target rules from the Replay tab's order ticket.</div>
+        <div class="tbtns">
+          <button type="button" class="buy" id="simBuyBtn">Buy <small>go long</small></button>
+          <button type="button" class="short" id="simShortBtn">Short <small>sell short</small></button>
+        </div>
+        <div class="closerow">
+          <button type="button" class="btn" id="simCloseBtn">Close position</button>
+          <button type="button" class="btn" id="simCloseHalf">Close half</button>
+        </div>
+        <div id="simPosBox" class="pos-flat posbox">Flat</div>
+        <div class="preview" id="simPreview"></div>
+      </section>
+
+      <section class="card">
+        <h2>This day's fills</h2>
+        <ul class="log" id="simLog"></ul>
+        <div class="emptyhint" id="simLogEmpty">Generate a simulated day, then press Play.</div>
+      </section>
+    </aside>
+   </section>
   </main>
 
   <div class="foot">
@@ -541,7 +622,7 @@ function execFill(a, q, price, idx, feeRate){
     const cq = Math.min(aq, Math.abs(pos)), dir = Math.sign(pos);
     const entryFee = cq * (a.efs || 0), exitFee = cq * price * feeRate;
     const pnl = cq * (price - a.avg) * dir - entryFee - exitFee;              // net of both fees
-    closed.push({side: dir > 0 ? 'long' : 'short', qty: cq, entry: a.avg, exit: price, pnl, pct: pnl / (cq * a.avg) * 100, fee: entryFee + exitFee, idx});
+    closed.push({side: dir > 0 ? 'long' : 'short', qty: cq, entry: a.avg, exit: price, pnl, pct: pnl / (cq * a.avg) * 100, fee: entryFee + exitFee, idx, entryIdx: a.openIdx});
     a.realized += pnl;
     a.qty = pos + q;
     const rem = aq - cq;
@@ -603,14 +684,15 @@ function tradeStats(tr){
 
 /* ---------- preferences and persistence ---------- */
 const PREF_KEY = 'papertape:prefs:v1', ACCT_KEY = 'papertape:acct:v1';
-const DEFAULTS = {sym: 'NVDA', tf: 5, speed: 5, zoom: 60, vwap: true, ema9: false, ema21: false, prev: true, page: 'replay',
+const DEFAULTS = {sym: 'NVDA', tf: 5, speed: 5, zoom: 60, vwap: true, ema9: false, ema21: false, prev: true, page: 'replay', simSrc: 'MIX',
   sizePct: 25, lev: 1, chartH: null, slOn: false, sl: 0.5, tpOn: false, tp: 1, slip: 1, fee: 0.02, delay: 1, jitter: true, pauseExit: true, blind: false, startOff: 1, startBal: 100000};
 let P = {...DEFAULTS};
 function loadPrefs(){ try { const r = localStorage.getItem(PREF_KEY); if (r) P = {...DEFAULTS, ...JSON.parse(r)}; } catch (e) {} 
   P.tf = clamp(Math.round(+P.tf) || 5, 1, 390); P.speed = clamp(+P.speed || 5, 0.1, 2000); P.zoom = clamp(Math.round(+P.zoom) || 90, 20, 390);
   P.sizePct = clamp(+P.sizePct || 25, 1, 500); P.chartH = (P.chartH == null || !isFinite(+P.chartH)) ? null : clamp(Math.round(+P.chartH), 220, 4000); P.lev = [1, 2, 4].includes(+P.lev) ? +P.lev : 1; P.slip = clamp(+P.slip || 0, 0, 100); P.fee = clamp(isFinite(+P.fee) ? +P.fee : 0.02, 0, 5); P.delay = clamp(isFinite(+P.delay) ? +P.delay : 1, 0, 59); P.jitter = !!P.jitter;
   P.startBal = clamp(+P.startBal || 100000, 100, 1e9); if (P.sym !== 'NVDA' && P.sym !== 'SPY') P.sym = 'NVDA';
-  if (!['replay', 'log', 'lab'].includes(P.page)) P.page = 'replay'; }
+  if (!['NVDA', 'SPY', 'MIX'].includes(P.simSrc)) P.simSrc = 'MIX';
+  if (!['replay', 'log', 'lab', 'sim'].includes(P.page)) P.page = 'replay'; }
 function savePrefs(){ try { localStorage.setItem(PREF_KEY, JSON.stringify(P)); } catch (e) {} }
 let acc = null;
 function loadAcct(){
@@ -639,6 +721,7 @@ function readTheme(){
     font: getComputedStyle(document.body).fontFamily};
   dirty = true;
   const labPage = document.getElementById('page-lab'); if (labPage && !labPage.hidden) drawLab();
+  const simPage = document.getElementById('page-sim'); if (simPage && !simPage.hidden) drawSimChart();
 }
 
 /* ---------- data ---------- */
@@ -1022,6 +1105,11 @@ function frame(now){
     if (n > 0){ accum -= n; step(Math.min(n, 400)); syncUI(); }
   }
   if (dirty){ dirty = false; draw(); }
+  if (simSt.playing && !simSt.done && simSt.sess){
+    simAccum += dt * simSt.speed; const n2 = Math.floor(simAccum);
+    if (n2 > 0){ simAccum -= n2; simStep(Math.min(n2, 400)); simSyncUI(); }
+  }
+  if (simDirty){ simDirty = false; drawSimChart(); }
   requestAnimationFrame(frame);
 }
 
@@ -1172,15 +1260,17 @@ function buildAbout(){
 /* ---------- pages ---------- */
 function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c])); }
 function setPage(p){
-  if (!['replay', 'log', 'lab'].includes(p)) p = 'replay';
+  if (!['replay', 'log', 'lab', 'sim'].includes(p)) p = 'replay';
   P.page = p; savePrefs();
-  ['replay', 'log', 'lab'].forEach(k => { const el = $('#page-' + k); if (el) el.hidden = k !== p; });
+  ['replay', 'log', 'lab', 'sim'].forEach(k => { const el = $('#page-' + k); if (el) el.hidden = k !== p; });
   document.querySelectorAll('#pageNav button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.page === p)));
   const pick = $('#pickBar'); if (pick) pick.hidden = p !== 'replay';
   const ab = $('#aboutBtn'); if (ab) ab.hidden = p !== 'replay';
   if (p !== 'replay' && st.playing) setPlaying(false);
+  if (p !== 'sim' && simSt.playing) setSimPlaying(false);
   if (p === 'log') renderLog();
   if (p === 'lab') drawLab();
+  if (p === 'sim') drawSimChart();
 }
 function initPageNav(){
   document.querySelectorAll('#pageNav button').forEach(b => b.addEventListener('click', () => setPage(b.dataset.page)));
@@ -1376,6 +1466,314 @@ function initLab(){
   new ResizeObserver(() => drawLab()).observe($('#labChartWrap'));
 }
 
+/* ---------- simulator (synthetic days + engulfing-pattern review) ---------- */
+const SIM_ACCT_KEY = 'papertape:simacct:v1';
+let simAcc = null;
+function loadSimAcct(){
+  try { const r = localStorage.getItem(SIM_ACCT_KEY); if (r){ const a = JSON.parse(r);
+    if (a && typeof a.cash === 'number' && a.start > 0 && Array.isArray(a.trades)){ a.qty = 0; a.avg = 0; a.efs = 0; a.openIdx = -1; a.fillBar = -1; a.fillPx = 0; a.fees = a.fees || 0; simAcc = a; return; } } } catch (e) {}
+  simAcc = freshAcct(P.startBal);
+}
+function saveSimAcct(){ if (simAcc.qty !== 0) return; try { localStorage.setItem(SIM_ACCT_KEY, JSON.stringify({...simAcc, trades: simAcc.trades.slice(-500)})); } catch (e) {} }
+
+let simSt = {sess: null, m: 1, playing: false, done: true, fills: [], eq: [], startPx: 0, startEq: 0, tradeStart: 0, feesStart: 0, speed: 15};
+let simAccum = 0, simDirty = true, simLogLen = -1;
+
+/* --- synthetic day generation: block-bootstrap real NVDA/SPY minute bars into a brand-new day --- */
+const SHAPE_BANK = {};
+function buildShapeBank(sym){
+  const sessions = RAW[sym].sessions, bank = [];
+  for (let i = 0; i < sessions.length; i++){
+    const s = getSession(sym, i); const bars = []; let prevClose = s.pc != null ? s.pc : s.o[0];
+    for (let k = 0; k < s.n; k++){
+      const o = s.o[k], h = s.h[k], l = s.l[k], c = s.c[k], v = s.v[k];
+      const hiBase = Math.max(o, c), loBase = Math.min(o, c);
+      bars.push({rOpen: (o - prevClose) / prevClose, rClose: (c - o) / o, rHigh: (h - hiBase) / hiBase, rLow: (loBase - l) / loBase, v});
+      prevClose = c;
+    }
+    bank.push({date: s.date, n: s.n, pc: s.pc != null ? s.pc : s.o[0], bars});
+  }
+  return bank;
+}
+function shapeBankFor(src){
+  if (src === 'NVDA' || src === 'SPY') return SHAPE_BANK[src] || (SHAPE_BANK[src] = buildShapeBank(src));
+  const a = SHAPE_BANK.NVDA || (SHAPE_BANK.NVDA = buildShapeBank('NVDA')), b = SHAPE_BANK.SPY || (SHAPE_BANK.SPY = buildShapeBank('SPY'));
+  return SHAPE_BANK.MIX || (SHAPE_BANK.MIX = a.concat(b));
+}
+// Stitches random 12-45 minute blocks lifted from real historical bars (with a small per-block volatility jitter)
+// into one brand-new day, so the local candle-to-candle behavior — including real patterns like engulfing — is
+// genuine market behavior, just reassembled into a sequence that never actually happened.
+function synthSession(src){
+  const bank = shapeBankFor(src);
+  const targetN = bank[Math.floor(Math.random() * bank.length)].n;
+  const anchor = bank[Math.floor(Math.random() * bank.length)];
+  let prevClose = anchor.pc;
+  const o = new Float64Array(targetN), h = new Float64Array(targetN), l = new Float64Array(targetN), c = new Float64Array(targetN), v = new Float64Array(targetN);
+  let filled = 0;
+  while (filled < targetN){
+    const day = bank[Math.floor(Math.random() * bank.length)]; if (day.bars.length < 6) continue;
+    const L = Math.min(day.bars.length, 12 + Math.floor(Math.random() * 34));
+    const start = Math.floor(Math.random() * (day.bars.length - L + 1)), volScale = 0.85 + Math.random() * 0.3;
+    for (let k = 0; k < L && filled < targetN; k++, filled++){
+      const b = day.bars[start + k];
+      const openP = prevClose * (1 + b.rOpen * volScale), closeP = openP * (1 + b.rClose * volScale);
+      const hiBase = Math.max(openP, closeP), loBase = Math.min(openP, closeP);
+      const hiP = hiBase * (1 + Math.max(0, b.rHigh) * volScale), loP = loBase * (1 - Math.max(0, b.rLow) * volScale);
+      o[filled] = openP; c[filled] = closeP; h[filled] = Math.max(hiP, openP, closeP); l[filled] = Math.min(loP, openP, closeP);
+      v[filled] = Math.max(1, Math.round(b.v * (0.7 + Math.random() * 0.6))); prevClose = closeP;
+    }
+  }
+  return addVwap({date: 'Simulated day', n: targetN, o, h, l, c, v, pc: anchor.pc, sim: true});
+}
+
+/* --- candlestick pattern detection (bullish/bearish engulfing) --- */
+function candleDir(b){ return b.c > b.o ? 1 : b.c < b.o ? -1 : 0; }
+function detectEngulfing(bars, i){
+  if (i < 1) return null;
+  const p = bars[i - 1], cur = bars[i], pd = candleDir(p), cd = candleDir(cur);
+  if (!pd || !cd || pd === cd) return null;
+  const pLo = Math.min(p.o, p.c), pHi = Math.max(p.o, p.c), cLo = Math.min(cur.o, cur.c), cHi = Math.max(cur.o, cur.c);
+  if (cLo <= pLo && cHi >= pHi && (cHi - cLo) > (pHi - pLo) * 1.0001) return cd > 0 ? 'bullish' : 'bearish';
+  return null;
+}
+function scanEngulfing(candles){ const out = []; for (let i = 1; i < candles.length; i++){ const k = detectEngulfing(candles, i); if (k) out.push({i, kind: k}); } return out; }
+function explainTrade(t, events, tf){
+  const entryCandle = Math.floor(Math.max(0, t.entryIdx || 0) / tf);
+  const nearby = events.filter(e => e.i >= entryCandle - 2 && e.i <= entryCandle);
+  const long = t.side === 'long', win = t.pnl > 0.0001, loss = t.pnl < -0.0001;
+  let tagk = null, why;
+  if (nearby.length){
+    const e = nearby[nearby.length - 1]; tagk = e.kind;
+    const aligned = (e.kind === 'bullish' && long) || (e.kind === 'bearish' && !long);
+    if (aligned && win) why = 'Went ' + (long ? 'long' : 'short') + ' right after a ' + e.kind + ' engulfing candle, and the follow-through in that direction carried the trade to a win.';
+    else if (aligned && loss) why = 'The ' + e.kind + ' engulfing signal pointed the right way, but the move reversed or stalled before the trade got out ahead.';
+    else if (!aligned && win) why = 'Traded ' + (long ? 'long' : 'short') + ' against a ' + e.kind + ' engulfing candle and still won — likely closed out before the signal\u2019s direction took hold, or the pattern didn\u2019t follow through here.';
+    else if (!aligned && loss) why = 'A ' + e.kind + ' engulfing candle had just formed, signaling the other way — trading against it likely contributed to the loss.';
+    else why = 'A ' + e.kind + ' engulfing candle formed near this entry, but the trade closed roughly flat.';
+  } else {
+    why = win ? 'No engulfing pattern near this entry — the win looks like ordinary trend or momentum rather than a reversal signal.'
+      : loss ? 'No engulfing pattern near this entry — the loss looks more like noise or a move against the short-term trend than a mistimed reversal play.'
+      : 'No engulfing pattern near this entry, and the trade closed roughly flat.';
+  }
+  return {tag: tagk, why, win, loss};
+}
+
+/* --- trading engine (mirrors the replay engine, but on simAcc/simSt/simChart) --- */
+function simCurPx(){ return simSt.sess.c[simSt.m - 1]; }
+function simMarkEquity(px){
+  const e = equity(simAcc, px); simSt.eq.push(e);
+  if (e > simAcc.peak) simAcc.peak = e;
+  const dd = (simAcc.peak - e) / simAcc.peak * 100; if (dd > simAcc.maxDD) simAcc.maxDD = dd;
+}
+function simMarketContext(){
+  const s = simSt.sess; if (simSt.m >= s.n) return {mid: simCurPx(), delay: 0, bar: -1};
+  const d = delaySec();
+  return {mid: pathPx({o: s.o[simSt.m], h: s.h[simSt.m], l: s.l[simSt.m], c: s.c[simSt.m]}, d), delay: d, bar: simSt.m};
+}
+function simDoFill(q, mid, idx, reason, slipBps, ctx0){
+  const side = Math.sign(q), price = fillPrice(mid, side, slipBps == null ? P.slip : slipBps), prevQty = simAcc.qty, feeRate = P.fee / 100;
+  const label = q > 0 ? (prevQty < 0 ? 'Cover' : 'Buy') : (prevQty > 0 ? 'Sell' : 'Short');
+  const closed = execFill(simAcc, q, price, idx, feeRate), fee = Math.abs(q) * price * feeRate, delay = ctx0 ? ctx0.delay : 0;
+  let pnl = null, pct = null;
+  if (closed.length){
+    const cq = closed.reduce((t, cl) => t + cl.qty, 0);
+    pnl = closed.reduce((t, cl) => t + cl.pnl, 0); pct = closed.reduce((t, cl) => t + cl.pct * cl.qty, 0) / cq;
+    closed.forEach(cl => { cl.sym = 'SIM'; cl.date = simSt.sess.date; cl.reason = reason; simAcc.trades.push(cl); });
+  }
+  if (ctx0 && ctx0.bar >= 0){ simAcc.fillBar = ctx0.bar; simAcc.fillPx = price; }
+  simSt.fills.push({i: idx, side, q: Math.abs(q), price, reason, label, pnl, pct, fee, delay});
+  saveSimAcct(); simDirty = true;
+  return {price, pnl, pct, label, fee, delay};
+}
+function simFlatten(reason){ if (!simAcc.qty) return null; return simDoFill(-simAcc.qty, simCurPx(), simSt.m - 1, reason); }
+function simStep(count){
+  const s = simSt.sess;
+  for (let n = 0; n < count && simSt.m < s.n && !simSt.done; n++){
+    const idx = simSt.m, bar = {o: s.o[idx], h: s.h[idx], l: s.l[idx], c: s.c[idx]};
+    const chk = (simAcc.qty && simAcc.fillBar === idx) ? {o: simAcc.fillPx, h: bar.h, l: bar.l, c: bar.c} : bar;
+    const ex = checkExits(simAcc, chk, P.slOn ? P.sl : 0, P.tpOn ? P.tp : 0);
+    simSt.m++;
+    if (ex){
+      const r = simDoFill(-simAcc.qty, ex.price, idx, ex.reason, ex.reason === 'stop' ? P.slip : 0);
+      toast((ex.reason === 'stop' ? 'Stop hit: ' : 'Target hit: ') + r.label.toLowerCase() + ' at ' + r.price.toFixed(2) + ' (' + fmtPct(r.pct) + ' after fees)', ex.reason === 'stop' ? 'neg' : 'pos');
+      if (P.pauseExit && simSt.playing) setSimPlaying(false);
+    }
+    simMarkEquity(bar.c);
+    if (simSt.m >= s.n){ simFinishSession(); break; }
+  }
+  simDirty = true;
+}
+function simFinishSession(){
+  simSt.done = true; setSimPlaying(false);
+  if (simAcc.qty !== 0){ simFlatten('close'); simMarkEquity(simCurPx()); }
+  saveSimAcct(); simSyncUI(); showSimReview();
+}
+function simOrder(side){
+  if (!simSt.sess || simSt.done) return;
+  const px = simCurPx(), q = orderQty(simAcc, side, px, P.sizePct, P.lev);
+  if (equity(simAcc, px) <= 0){ toast('The simulator account is wiped out. Reset it below.', 'neg'); return; }
+  if (q <= 0){ toast('No room left at this leverage. Raise leverage or close some of the position.'); return; }
+  const mc = simMarketContext(), r = simDoFill(side * q, mc.mid, simSt.m - 1, 'manual', undefined, mc);
+  toast(r.label + ' ' + q + ' shares at ' + r.price.toFixed(2) + (r.pct != null ? ' · ' + fmtPct(r.pct) : ''));
+  simSyncUI();
+}
+function simClosePct(frac){
+  if (!simSt.sess || simSt.done || !simAcc.qty) return;
+  const abs = Math.abs(simAcc.qty), q = frac >= 1 ? abs : Math.max(1, Math.floor(abs * frac));
+  const mc = simMarketContext(), r = simDoFill(-Math.sign(simAcc.qty) * q, mc.mid, simSt.m - 1, 'manual', undefined, mc);
+  toast(r.label + ' ' + q + ' at ' + r.price.toFixed(2) + ' · ' + fmtPct(r.pct), r.pnl >= 0 ? 'pos' : 'neg');
+  simSyncUI();
+}
+function setSimPlaying(b){
+  simSt.playing = b && !simSt.done; lastT = performance.now();
+  $('#simPlayBtn').textContent = simSt.done ? 'Day over' : simSt.playing ? 'Pause' : 'Play';
+}
+function simNewDay(){
+  if (simAcc.qty !== 0) simFlatten('switch');
+  const sess = synthSession(P.simSrc);
+  simSt.sess = sess; simSt.m = clamp(P.startOff, 1, sess.n - 1); simSt.done = false; simAccum = 0; simSt.fills = []; simLogLen = -1;
+  simSt.startPx = sess.c[simSt.m - 1]; simSt.startEq = equity(simAcc, simSt.startPx); simSt.eq = [simSt.startEq];
+  simSt.tradeStart = simAcc.trades.length; simSt.feesStart = simAcc.fees || 0;
+  setSimPlaying(false); hideSimReview(); saveSimAcct();
+  $('#simEmpty').classList.remove('show');
+  simSyncUI(); simDirty = true;
+}
+
+/* --- day review, with automatic per-trade "why" and an engulfing-specific scorecard --- */
+function showSimReview(){
+  const s = simSt.sess, tf = P.tf;
+  const eqEnd = equity(simAcc, s.c[s.n - 1]), day = eqEnd - simSt.startEq;
+  const sessTrades = simAcc.trades.slice(simSt.tradeStart);
+  const candles = buildCandles(s, s.n, tf), events = scanEngulfing(candles);
+  const explained = sessTrades.map(t => ({t, ...explainTrade(t, events, tf)}));
+
+  $('#simRevDate').textContent = 'Simulated day \u00b7 ' + sessTrades.length + ' trade' + (sessTrades.length === 1 ? '' : 's');
+  const pnlEl = $('#simRevPnl'); pnlEl.textContent = fmtSigned(day) + ' (' + fmtPct(simSt.startEq ? day / simSt.startEq * 100 : 0) + ')'; pnlEl.className = day >= 0 ? 'pos' : 'neg';
+  $('#simRevTrades').textContent = sessTrades.length ? sessTrades.length + ' (' + sessTrades.filter(t => t.pnl > 0).length + ' won)' : 'none';
+  $('#simRevFees').textContent = fmtMoney((simAcc.fees || 0) - simSt.feesStart);
+  $('#simRevEq').textContent = fmtMoney(eqEnd);
+
+  const bull = explained.filter(e => e.tag === 'bullish'), bear = explained.filter(e => e.tag === 'bearish');
+  const wr = arr => arr.length ? Math.round(arr.filter(e => e.win).length / arr.length * 100) : null;
+  const bullWR = wr(bull), bearWR = wr(bear);
+  $('#simEngulfSummary').innerHTML = 'Engulfing-pattern trades \u2014 bullish: ' + bull.length + (bullWR == null ? '' : ' (' + bullWR + '% won)')
+    + ' &nbsp;\u00b7&nbsp; bearish: ' + bear.length + (bearWR == null ? '' : ' (' + bearWR + '% won)')
+    + (events.length ? ' &nbsp;\u00b7&nbsp; ' + events.length + ' engulfing candle' + (events.length === 1 ? '' : 's') + ' formed today' : '');
+
+  const tbl = $('#simTradeReview');
+  if (!explained.length) tbl.innerHTML = '<tr><td class="emptyhint">No trades today \u2014 flat all day.</td></tr>';
+  else tbl.innerHTML = '<thead><tr><th>Time</th><th>Side</th><th>Entry \u2192 exit</th><th>%</th><th>P&amp;L</th><th>Pattern</th><th>Why</th></tr></thead><tbody>'
+    + explained.map(({t, tag: tk, why}) => '<tr><td>' + fmtClock(570 + t.idx + 1) + '</td><td>' + (t.side === 'long' ? 'Long' : 'Short') + ' ' + t.qty + '</td><td>' + t.entry.toFixed(2) + ' \u2192 ' + t.exit.toFixed(2) + '</td><td class="' + sgn(t.pct) + '">' + fmtPct(t.pct) + '</td><td class="' + sgn(t.pnl) + '">' + fmtSigned(t.pnl) + '</td><td>' + (tk ? tk[0].toUpperCase() + tk.slice(1) : '\u2013') + '</td><td style="white-space:normal;min-width:220px">' + esc(why) + '</td></tr>').join('') + '</tbody>';
+
+  $('#simSummary').classList.add('show');
+}
+function hideSimReview(){ $('#simSummary').classList.remove('show'); }
+
+/* --- sim UI sync + chart --- */
+function simSyncUI(){
+  const s = simSt.sess;
+  if (!s){ $('#simEmpty').classList.add('show'); return; }
+  const px = simCurPx(), eq = equity(simAcc, px), clockMin = 570 + simSt.m;
+  $('#simDateLbl').textContent = s.date;
+  $('#simPx').textContent = px.toFixed(2);
+  const base = s.pc != null ? s.pc : s.o[0], chg = (px - base) / base * 100;
+  setKV($('#simChg'), fmtPct(chg), 'pct ' + sgn(chg));
+  $('#simClock').textContent = fmtClock(clockMin);
+  $('#simProgFill').style.width = (simSt.m / s.n * 100) + '%';
+  const remain = s.n - simSt.m;
+  $('#simEta').textContent = simSt.done ? 'Day over' : remain + ' min left';
+
+  setKV($('#simEqBig'), fmtMoney(eq), 'big');
+  const day = eq - simSt.startEq; setKV($('#simKvDay'), fmtSigned(day) + '  ' + fmtPct(simSt.startEq ? day / simSt.startEq * 100 : 0), sgn(day));
+  $('#simKvCash').textContent = fmtMoney(simAcc.cash); $('#simKvFees').textContent = fmtMoney(simAcc.fees || 0);
+
+  const box = $('#simPosBox');
+  if (!simAcc.qty){ box.className = 'pos-flat'; box.textContent = 'Flat'; }
+  else {
+    const dir = Math.sign(simAcc.qty), un = (px - simAcc.avg) / simAcc.avg * dir * 100, unUsd = simAcc.qty * (px - simAcc.avg), lv = exitLevels(simAcc, P.slOn ? P.sl : 0, P.tpOn ? P.tp : 0);
+    box.className = '';
+    box.innerHTML = '<div class="posline">' + (dir > 0 ? 'Long ' : 'Short ') + Math.abs(simAcc.qty) + ' sh at ' + simAcc.avg.toFixed(2) + '</div>' +
+      '<div class="posgrid"><span>Open P&amp;L</span><span class="' + sgn(un) + '">' + fmtPct(un) + '  ' + fmtSigned(unUsd) + '</span>' +
+      '<span>Exposure</span><span>' + fmtMoney(Math.abs(simAcc.qty) * px, 0) + '</span>' +
+      (lv.stop ? '<span>Stop</span><span>' + lv.stop.toFixed(2) + '</span>' : '') + (lv.tp ? '<span>Target</span><span>' + lv.tp.toFixed(2) + '</span>' : '') + '</div>';
+  }
+  const bq = orderQty(simAcc, 1, px, P.sizePct, P.lev), sq = orderQty(simAcc, -1, px, P.sizePct, P.lev);
+  $('#simPreview').textContent = simSt.done ? 'The day is over. Generate another one to keep practicing.' : 'Next order: ' + Math.max(bq, sq) + ' shares, about ' + fmtMoney(Math.max(bq, sq) * px, 0);
+  const off = simSt.done || !simSt.sess;
+  $('#simBuyBtn').disabled = off || bq <= 0; $('#simShortBtn').disabled = off || sq <= 0;
+  $('#simCloseBtn').disabled = off || !simAcc.qty; $('#simCloseHalf').disabled = off || Math.abs(simAcc.qty) < 2;
+  $('#simStepMin').disabled = $('#simStepCandle').disabled = simSt.done;
+
+  if (simLogLen !== simSt.fills.length){
+    simLogLen = simSt.fills.length; const ul = $('#simLog'); ul.innerHTML = '';
+    $('#simLogEmpty').style.display = simSt.fills.length ? 'none' : '';
+    for (let j = simSt.fills.length - 1; j >= 0; j--){
+      const f = simSt.fills[j], li = document.createElement('li');
+      const why = f.reason === 'stop' ? 'Stop hit' : f.reason === 'target' ? 'Target hit' : f.reason === 'close' ? 'Closed at the bell' : f.reason === 'switch' ? 'Closed on new day' : '';
+      const notes = [why, 'fee ' + fmtMoney(f.fee)].filter(Boolean).join(' \u00b7 ');
+      li.innerHTML = '<span class="t">' + fmtClock(570 + f.i + 1) + '</span><span>' + f.label + ' ' + f.q + ' at ' + f.price.toFixed(2) + '<span class="why">' + notes + '</span></span>' +
+        '<span class="' + (f.pct == null ? '' : sgn(f.pct)) + '">' + (f.pct == null ? '' : fmtPct(f.pct)) + '</span>';
+      ul.appendChild(li);
+    }
+  }
+}
+function drawSimChart(){
+  const cv3 = $('#simChart'); if (!cv3 || !T) return;
+  const ctx3 = cv3.getContext('2d');
+  const W = cv3.clientWidth, H = cv3.clientHeight; if (W < 40 || H < 40) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  if (cv3.width !== Math.round(W * dpr) || cv3.height !== Math.round(H * dpr)){ cv3.width = Math.round(W * dpr); cv3.height = Math.round(H * dpr); }
+  ctx3.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx3.fillStyle = T.bg; ctx3.fillRect(0, 0, W, H);
+  const s = simSt.sess; if (!s) return;
+  const padR = 68, padT = 10, padB = 10, px0 = 6, px1 = W - padR, pw = px1 - px0, py0 = padT, py1 = H - padB;
+  const m = Math.min(simSt.m, s.n), candles = buildCandles(s, m, P.tf);
+  if (!candles.length) return;
+  let lo = Infinity, hi = -Infinity; candles.forEach(cd => { if (cd.l < lo) lo = cd.l; if (cd.h > hi) hi = cd.h; });
+  if (!isFinite(lo) || !isFinite(hi) || hi <= lo) hi = lo + 1;
+  const pad2 = (hi - lo) * 0.06 || 1; lo -= pad2; hi += pad2;
+  const yOf = vv => py1 - (vv - lo) / (hi - lo) * (py1 - py0);
+  const n = candles.length, slot = pw / Math.max(n, 1), cw = Math.max(2, Math.min(14, slot * 0.62));
+
+  ctx3.strokeStyle = T.grid; ctx3.lineWidth = 1; ctx3.font = '11px ' + T.font; ctx3.fillStyle = T.muted; ctx3.textAlign = 'left';
+  niceTicks(lo, hi, 5).forEach(vv => { const y = Math.round(yOf(vv)) + 0.5; ctx3.beginPath(); ctx3.moveTo(px0, y); ctx3.lineTo(px1, y); ctx3.stroke(); ctx3.fillText(vv.toFixed(2), px1 + 6, y + 4); });
+
+  ctx3.beginPath(); candles.forEach((cd, i) => { const x = px0 + slot * (i + 0.5), y = yOf(cd.vw); i ? ctx3.lineTo(x, y) : ctx3.moveTo(x, y); });
+  ctx3.strokeStyle = T.vwap; ctx3.lineWidth = 1.4; ctx3.stroke();
+
+  candles.forEach((cd, i) => {
+    const x = px0 + slot * (i + 0.5), up = cd.c >= cd.o, col = up ? T.up : T.down;
+    ctx3.strokeStyle = col; ctx3.lineWidth = 1;
+    ctx3.beginPath(); ctx3.moveTo(Math.round(x) + 0.5, yOf(cd.h)); ctx3.lineTo(Math.round(x) + 0.5, yOf(cd.l)); ctx3.stroke();
+    ctx3.fillStyle = col; const yo = yOf(cd.o), yc = yOf(cd.c);
+    ctx3.fillRect(x - cw / 2, Math.min(yo, yc), cw, Math.max(1.5, Math.abs(yc - yo)));
+  });
+}
+function initSim(){
+  loadSimAcct();
+  segButtons($('#simSrcSeg'), ['NVDA', 'SPY', 'MIX'], v => v === 'MIX' ? 'Mix' : v, v => v === P.simSrc, v => { P.simSrc = v; savePrefs(); refreshSeg($('#simSrcSeg'), x => x === P.simSrc); });
+  segButtons($('#simSpdSeg'), [5, 15, 40, 90], v => v + 'x', v => v === simSt.speed, v => { simSt.speed = v; refreshSeg($('#simSpdSeg'), x => x === simSt.speed); });
+  $('#simNewDayBtn').addEventListener('click', simNewDay);
+  $('#simRevNewDay').addEventListener('click', simNewDay);
+  $('#simRevClose').addEventListener('click', hideSimReview);
+  $('#simPlayBtn').addEventListener('click', () => setSimPlaying(!simSt.playing));
+  $('#simStepMin').addEventListener('click', () => { simStep(1); simSyncUI(); });
+  $('#simStepCandle').addEventListener('click', () => { const tf = P.tf, target = Math.min(simSt.sess ? simSt.sess.n : 0, (Math.floor(simSt.m / tf) + 1) * tf); simStep(Math.max(1, target - simSt.m)); simSyncUI(); });
+  $('#simBuyBtn').addEventListener('click', () => simOrder(1));
+  $('#simShortBtn').addEventListener('click', () => simOrder(-1));
+  $('#simCloseBtn').addEventListener('click', () => simClosePct(1));
+  $('#simCloseHalf').addEventListener('click', () => simClosePct(0.5));
+  let simResetT = 0;
+  $('#simResetAcct').addEventListener('click', e => {
+    const b = e.currentTarget;
+    if (!simResetT){ b.textContent = 'Click again to confirm'; simResetT = setTimeout(() => { simResetT = 0; b.textContent = 'Reset simulator account'; }, 3500); return; }
+    clearTimeout(simResetT); simResetT = 0; b.textContent = 'Reset simulator account';
+    simAcc = freshAcct(P.startBal); saveSimAcct(); simSyncUI(); toast('Simulator account reset.');
+  });
+  $('#simEmpty').classList.add('show');
+  simSyncUI();
+}
+
 /* ---------- boot ---------- */
 async function boot(){
   loadPrefs(); acc = loadAcct(); st.tf = P.tf; st.speed = P.speed; st.zoom = P.zoom; st.sym = P.sym;
@@ -1386,7 +1784,7 @@ async function boot(){
   } catch (err){
     $('#loading').textContent = 'This browser could not unpack the bundled market data. Try a current version of Chrome, Safari, Edge or Firefox.'; return;
   }
-  initControls(); initChartResize(); initPageNav(); initLogPage(); initLab(); refreshControls(); refreshChartSizeUI(); if (P.chartH != null) applyChartHeight(P.chartH);
+  initControls(); initChartResize(); initPageNav(); initLogPage(); initLab(); initSim(); refreshControls(); refreshChartSizeUI(); if (P.chartH != null) applyChartHeight(P.chartH);
   $('#loading').classList.remove('show');
   randomDay();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { readTheme(); dirty = true; });
